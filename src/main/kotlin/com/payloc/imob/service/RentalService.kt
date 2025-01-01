@@ -1,6 +1,7 @@
 package com.payloc.imob.service
 
 import com.payloc.imob.constants.Constants
+import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
 import com.payloc.imob.controller.vo.RentalVO
 import com.payloc.imob.exception.ItemAlreadyExistsException
 import com.payloc.imob.exception.ItemNotFoundException
@@ -27,12 +28,10 @@ class RentalService @Autowired constructor(
 
     fun create(rentalVo: RentalVO): ResponseEntity<Any> {
         return try {
-            val propLong = rentalVo.propertyNumber
-            val property = propertyRepository.findByPropertyNumber(propLong).firstOrNull()
+            val property = propertyRepository.findByPropertyNumber(rentalVo.propertyNumber).firstOrNull()
                 ?: throw IllegalStateException("Property not found.")
 
-            val tenantLong = rentalVo.tenantNumber
-            val tenant = tenantRepository.findByTenantNumber(tenantLong)
+            val tenant = tenantRepository.findByTenantNumber(rentalVo.tenantNumber)
                 .orElseThrow { ItemNotFoundException("Tenant not found.") }
 
             if (property.status != PropertyStatus.AVAILABLE) {
@@ -45,7 +44,7 @@ class RentalService @Autowired constructor(
             }
 
             val rental = Rental(
-                rentalNumber = rentalRepository.count() + Constants.INITIAL_ELEMENT_NUMBER,
+                rentalNumber = rentalRepository.count().plus(INITIAL_ELEMENT_NUMBER).toString(),
                 tenant = tenant,
                 property = property,
                 rentalValue = rentalVo.rentalValue,
@@ -64,7 +63,7 @@ class RentalService @Autowired constructor(
 
             tenant.apply {
                 updatedAt = LocalDateTime.now()
-                rentalNumber = (rentalNumber?.plus(rental.rentalNumber) ?: listOf(rental.rentalNumber)) as List<Long>?
+                rentalNumber = rentalNumber?.plus(rental.rentalNumber.toString())
             }
 
             propertyRepository.save(property)
@@ -117,7 +116,7 @@ class RentalService @Autowired constructor(
         }
     }
 
-    fun findByRentalNumber(rentalNumber: Long?): ResponseEntity<Any> {
+    fun findByRentalNumber(rentalNumber: String?): ResponseEntity<Any> {
         return try {
             val rental = rentalRepository.findByRentalNumber(rentalNumber)
                 .orElseThrow { ItemNotFoundException("Rental not found.") }

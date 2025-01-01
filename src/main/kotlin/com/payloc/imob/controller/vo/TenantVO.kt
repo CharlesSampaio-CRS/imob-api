@@ -4,7 +4,7 @@ import com.payloc.imob.model.enumerate.PersonStatus
 
 data class TenantVO(
     val id: String?,
-    val tenantNumber: Long?,
+    val tenantNumber: String?,
     val name: String?,
     val cpf: String?,
     val status: PersonStatus?,

@@ -8,7 +8,7 @@ import java.util.Optional
 
 @Repository
 interface RentalRepository : MongoRepository<Rental, ObjectId>{
-    fun findByRentalNumber(rentalNumber: Long?): Optional<Rental>
+    fun findByRentalNumber(rentalNumber: String?): Optional<Rental>
 
     fun findByStatus(status: String): List<Rental>
 }

@@ -5,10 +5,10 @@ import com.payloc.imob.model.enumerate.TypeWarranty
 import java.time.LocalDateTime
 
 data class RentalVO(
-    val rentalNumber: Long?,
-    val tenantNumber: Long?,
+    val rentalNumber: String?,
+    val tenantNumber: String?,
     val tenantName: String?,
-    val propertyNumber: Long,
+    val propertyNumber: String?,
     val status: RentalStatus?,
     val rentalValue: Double,
     val inputValue: Double,

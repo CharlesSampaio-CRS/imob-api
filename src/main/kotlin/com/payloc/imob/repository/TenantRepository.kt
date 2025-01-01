@@ -10,5 +10,5 @@ interface TenantRepository : MongoRepository<Tenant, String>{
 
     fun findByPersonCpf(cpf: String): Optional<Tenant>
 
-    fun findByTenantNumber(tenantNumber: Long?): Optional<Tenant>
+    fun findByTenantNumber(tenantNumber: String?): Optional<Tenant>
 }

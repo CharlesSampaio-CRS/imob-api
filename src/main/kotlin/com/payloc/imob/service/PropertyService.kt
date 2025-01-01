@@ -1,6 +1,6 @@
 package com.payloc.imob.service
 
-import com.payloc.imob.constants.Constants
+import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
 import com.payloc.imob.controller.vo.PropertyVO
 import com.payloc.imob.exception.ErrorResponse
 import com.payloc.imob.exception.ItemAlreadyExistsException
@@ -27,7 +27,7 @@ class PropertyService @Autowired constructor(
 
             property.apply {
                 status = PropertyStatus.AVAILABLE
-                propertyNumber = repository.count() + Constants.INITIAL_ELEMENT_NUMBER
+                propertyNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
                 createdAt = LocalDateTime.now()
             }
             val save = repository.save(property)
@@ -74,7 +74,7 @@ class PropertyService @Autowired constructor(
         }
     }
 
-    fun findByPropertyNumber(propertyNumber: Long): ResponseEntity<Any> {
+    fun findByPropertyNumber(propertyNumber: String): ResponseEntity<Any> {
         return try {
             val property = repository.findByPropertyNumber(propertyNumber).firstOrNull()
                 ?: throw ItemNotFoundException("Property with number $propertyNumber not found")
