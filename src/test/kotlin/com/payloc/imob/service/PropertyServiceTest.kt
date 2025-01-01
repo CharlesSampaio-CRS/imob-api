@@ -48,15 +48,6 @@ class PropertyServiceTest {
             id = null
         )
 
-        val propertyVO = PropertyVO(
-            propertyNumber = "1",
-            typeProperty = TypeProperty.RESIDENTIAL,
-            owner = person.name,
-            status = PropertyStatus.AVAILABLE,
-            value = 5000.0,
-            createdAt = LocalDateTime.now().toString()
-        )
-
         `when`(repository.count()).thenReturn(0L)
         `when`(repository.save(any(Property::class.java))).thenReturn(property)
 
