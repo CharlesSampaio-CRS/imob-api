@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 data class Rental(
     @Id
     var id: String?,
-    var rentalNumber: Long?,
+    var rentalNumber: String?,
     var tenant: Tenant,
     var property: Property,
     var rentalValue: Double,

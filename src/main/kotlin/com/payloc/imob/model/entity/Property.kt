@@ -11,7 +11,7 @@ data class Property (
 
     @Id
     var id: String?,
-    var propertyNumber: Long,
+    var propertyNumber: String?,
     var typeProperty: TypeProperty,
     var status: PropertyStatus?,
     var owner: Person,

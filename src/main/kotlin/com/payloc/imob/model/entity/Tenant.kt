@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 data class Tenant(
     @Id
     var id: String?,
-    var tenantNumber: Long?,
+    var tenantNumber: String?,
     var person: Person,
     var address: Address,
     var occupation: Occupation,
