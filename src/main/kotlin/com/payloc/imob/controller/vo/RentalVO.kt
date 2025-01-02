@@ -13,7 +13,7 @@ data class RentalVO(
     val rentalValue: Double,
     val inputValue: Double,
     val adminValue: Double,
-    val dueDate: LocalDateTime,
+    val dueDate: Int,
     val paid: Boolean,
     val initDate: LocalDateTime,
     val finalDate: LocalDateTime,
