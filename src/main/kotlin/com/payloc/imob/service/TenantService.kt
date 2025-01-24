@@ -8,7 +8,8 @@ import com.payloc.imob.exception.ItemNotFoundException
 import com.payloc.imob.model.entity.Tenant
 import com.payloc.imob.model.enumerate.PersonStatus
 import com.payloc.imob.repository.TenantRepository
-import com.payloc.imob.utils.ValidatorDocument
+import com.payloc.imob.util.EncryptionUtil
+import com.payloc.imob.util.ValidatorDocument
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -26,8 +27,11 @@ class TenantService @Autowired constructor(
         return try {
             validateTenantDocument(tenant.person.cpf)
 
-            repository.findByPersonCpf(tenant.person.cpf).ifPresent {
-                throw ItemAlreadyExistsException("Tenant with CPF ${tenant.person.cpf} already exists.")
+            val cpfEncrypt = EncryptionUtil.encrypt(tenant.person.cpf)
+            tenant.person.cpf = cpfEncrypt
+
+            repository.findByPersonCpf(cpfEncrypt).ifPresent {
+                throw ItemAlreadyExistsException("Tenant already exists.")
             }
 
             tenant.apply {
@@ -41,11 +45,11 @@ class TenantService @Autowired constructor(
 
             ResponseEntity.ok(
                 TenantVO(
-                    id = tenantSaved.id,
                     tenantNumber = tenantSaved.tenantNumber,
                     name = tenantSaved.person.name,
                     cpf = tenantSaved.person.cpf,
-                    status = tenantSaved.person.status
+                    status = tenantSaved.person.status,
+                    createdAt = tenantSaved.createdAt
                 )
             )
         } catch (ex: ItemAlreadyExistsException) {
@@ -70,11 +74,11 @@ class TenantService @Autowired constructor(
         return try {
             val tenants = repository.findAll().map {
                 TenantVO(
-                    id = it.id,
                     tenantNumber = it.tenantNumber,
                     name = it.person.name,
-                    cpf = it.person.cpf,
-                    status = it.person.status
+                    cpf = EncryptionUtil.decrypt(it.person.cpf),
+                    status = it.person.status,
+                    createdAt = it.createdAt
                 )
             }
             logger.info("Retrieved ${tenants.size} tenants")
@@ -89,9 +93,13 @@ class TenantService @Autowired constructor(
 
     fun findByPersonCpf(cpf: String): ResponseEntity<Any> {
         return try {
-            val tenant = repository.findByPersonCpf(cpf)
+            val encryptedCpf = EncryptionUtil.encrypt(cpf)
+            val tenant = repository.findByPersonCpf(encryptedCpf)
                 .orElseThrow { ItemNotFoundException("Tenant not found with CPF: $cpf") }
+
             logger.info("Tenant retrieved successfully: $tenant")
+
+            tenant.person.cpf = EncryptionUtil.decrypt(tenant.person.cpf)
             ResponseEntity.ok(tenant)
         } catch (ex: ItemNotFoundException) {
             logger.warn("Tenant not found: $cpf")
@@ -108,30 +116,26 @@ class TenantService @Autowired constructor(
 
     fun updateTenant(tenant: Tenant): ResponseEntity<Any> {
         return try {
-            val existingTenant = repository.findByPersonCpf(tenant.person.cpf)
+            val encryptedCpf = EncryptionUtil.encrypt(tenant.person.cpf)
+            val existingTenant = repository.findByPersonCpf(encryptedCpf)
                 .orElseThrow { ItemNotFoundException("Tenant not found with CPF: ${tenant.person.cpf}") }
 
-            validateTenantDocument(tenant.person.cpf)
-
             existingTenant.apply {
-                id = tenant.id
-                person = tenant.person
-                address = tenant.address
-                occupation = tenant.occupation
-                numberOfChildren = tenant.numberOfChildren
-                minors = tenant.minors
-                spouse = tenant.spouse
-                participation = tenant.participation
-                references = tenant.references
-                goods = tenant.goods
-                createdAt = tenant.createdAt
+                person.cpf = encryptedCpf
                 updatedAt = LocalDateTime.now()
+                repository.save(existingTenant)
             }
-
-            val updatedTenant = repository.save(existingTenant)
-            logger.info("Tenant updated successfully: $updatedTenant")
-
-            ResponseEntity.ok(updatedTenant)
+            logger.info("Tenant updated successfully")
+            ResponseEntity.ok(
+                TenantVO(
+                    tenantNumber = existingTenant.tenantNumber,
+                    name = existingTenant.person.name,
+                    cpf = tenant.person.cpf,
+                    status = existingTenant.person.status,
+                    createdAt = existingTenant.createdAt,
+                    updatedAt = existingTenant.updatedAt
+                )
+            )
         } catch (ex: ItemNotFoundException) {
             logger.warn("Tenant not found: ${tenant.person.cpf}")
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(

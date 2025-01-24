@@ -1,5 +1,8 @@
 package com.payloc.imob.model.entity
 
+import com.fasterxml.jackson.annotation.JsonInclude
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Address(
     val street: String,
     val number: String,

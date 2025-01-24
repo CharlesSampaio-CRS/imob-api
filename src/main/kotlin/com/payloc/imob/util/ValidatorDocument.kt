@@ -1,4 +1,4 @@
-package com.payloc.imob.utils
+package com.payloc.imob.util
 
 class ValidatorDocument(private val cpf: String) {
 
