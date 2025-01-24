@@ -1,6 +1,7 @@
 package com.payloc.imob.service
 
 import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
+import com.payloc.imob.constants.Constants.Companion.ITEM_ALREADY_EXISTS
 import com.payloc.imob.controller.vo.PropertyVO
 import com.payloc.imob.exception.ErrorResponse
 import com.payloc.imob.exception.ItemAlreadyExistsException
@@ -42,7 +43,7 @@ class PropertyService @Autowired constructor(
             logger.info("Property created successfully: $response")
             ResponseEntity.ok(response)
         } catch (ex: ItemAlreadyExistsException) {
-            logger.warn("Address already exists: ${property.address}")
+            logger.warn("$ITEM_ALREADY_EXISTS ${property.address}")
             ResponseEntity.status(HttpStatus.CONFLICT).body(
                 ErrorResponse(message = ex.message ?: "Address already exists", status = HttpStatus.CONFLICT.value())
             )
