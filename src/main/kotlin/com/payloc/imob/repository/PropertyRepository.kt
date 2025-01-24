@@ -11,7 +11,7 @@ interface PropertyRepository : MongoRepository<Property, String>{
     @Query("{ 'address.street': ?0, 'address.number': ?1, 'address.complement': ?2 }")
     fun findByAddress(street: String, number: String, complement: String): List<Property>
 
-    fun findByPropertyNumber(propertyNumber: Long): List<Property>
+    fun findByPropertyNumber(propertyNumber: String?): List<Property>
 
     fun findByStatus(status: String): List<Property>
 }

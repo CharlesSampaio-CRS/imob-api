@@ -20,4 +20,4 @@ data class Tenant(
     var goods: List<Goods>? = emptyList(),
     var createdAt: LocalDateTime? = LocalDateTime.now(),
     var updatedAt: LocalDateTime? = null,
-    var rentalNumber: List<Long>? = listOf())
+    var rentalNumber: List<String>? = listOf())

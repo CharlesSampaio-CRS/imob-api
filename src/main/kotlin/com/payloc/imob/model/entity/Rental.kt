@@ -16,7 +16,7 @@ data class Rental(
     var rentalValue: Double,
     var inputValue: Double,
     var adminValue: Double,
-    var dueDate: LocalDateTime,
+    var dueDate: Int,
     var paid: Boolean,
     var initDate: LocalDateTime,
     var finalDate: LocalDateTime,

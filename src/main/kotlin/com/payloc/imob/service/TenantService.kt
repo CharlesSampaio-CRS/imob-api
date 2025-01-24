@@ -1,6 +1,6 @@
 package com.payloc.imob.service
 
-import com.payloc.imob.constants.Constants
+import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
 import com.payloc.imob.controller.vo.TenantVO
 import com.payloc.imob.exception.DocumentValidationException
 import com.payloc.imob.exception.ItemAlreadyExistsException
@@ -33,7 +33,7 @@ class TenantService @Autowired constructor(
             tenant.apply {
                 person.status = PersonStatus.ACTIVE
                 createdAt = LocalDateTime.now()
-                tenantNumber = repository.count() + Constants.INITIAL_ELEMENT_NUMBER
+                tenantNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
             }
 
             val tenantSaved = repository.save(tenant)

@@ -4,7 +4,7 @@ import com.payloc.imob.model.enumerate.PropertyStatus
 import com.payloc.imob.model.enumerate.TypeProperty
 
 data class PropertyVO(
-    val propertyNumber: Long,
+    val propertyNumber: String?,
     val typeProperty: TypeProperty,
     val status: PropertyStatus?,
     val owner: String,

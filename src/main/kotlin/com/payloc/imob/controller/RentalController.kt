@@ -29,7 +29,7 @@ class RentalController(
     }
 
     @GetMapping("/{rentalNumber}")
-    fun findByRentalNumber(@PathVariable rentalNumber: Long): ResponseEntity<Any> {
+    fun findByRentalNumber(@PathVariable rentalNumber: String): ResponseEntity<Any> {
        return service.findByRentalNumber(rentalNumber)
     }
 

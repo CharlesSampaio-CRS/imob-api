@@ -28,7 +28,7 @@ class PropertyController(
     }
 
     @GetMapping("/{propertyNumber}")
-    fun findByPropertyNumber(@PathVariable propertyNumber: Long): ResponseEntity<Any> {
+    fun findByPropertyNumber(@PathVariable propertyNumber: String): ResponseEntity<Any> {
        return service.findByPropertyNumber(propertyNumber)
     }
 
