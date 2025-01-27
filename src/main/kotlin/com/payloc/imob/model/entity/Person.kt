@@ -1,11 +1,13 @@
 package com.payloc.imob.model.entity
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.payloc.imob.model.enumerate.PersonStatus
 import java.time.LocalDate
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Person(
     var status: PersonStatus?,
-    val cpf: String,
+    var cpf: String,
     val name: String,
     val phone: String,
     val email: String,
@@ -13,6 +15,6 @@ data class Person(
     val naturalness: String,
     val nationality: String,
     val maritalStatus: String?,
-    val motherName: String?,
-    val fatherName: String?,
+    val motherName: String? = null,
+    val fatherName: String?= null,
 )

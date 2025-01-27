@@ -5,8 +5,10 @@ import com.payloc.imob.model.enumerate.TypeProperty
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
+import com.fasterxml.jackson.annotation.JsonInclude
 
 @Document
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Property (
 
     @Id
