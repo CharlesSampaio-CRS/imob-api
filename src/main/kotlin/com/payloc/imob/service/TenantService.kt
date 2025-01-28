@@ -9,7 +9,7 @@ import com.payloc.imob.model.entity.Tenant
 import com.payloc.imob.model.enumerate.PersonStatus
 import com.payloc.imob.repository.TenantRepository
 import com.payloc.imob.util.EncryptionUtil
-import com.payloc.imob.util.ValidatorDocument
+import com.payloc.imob.util.ValidatorDocumentUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -155,7 +155,7 @@ class TenantService @Autowired constructor(
     }
 
     private fun validateTenantDocument(cpf: String) {
-        if (!ValidatorDocument(cpf).isValid()) {
+        if (!ValidatorDocumentUtil(cpf).isValid()) {
             throw DocumentValidationException("Document CPF is invalid: $cpf")
         }
     }
