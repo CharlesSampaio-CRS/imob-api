@@ -19,14 +19,15 @@ import java.time.LocalDateTime
 
 @Service
 class TenantService @Autowired constructor(
-    private val repository: TenantRepository
+    private val repository: TenantRepository,
+    private val awsS3Service: AwsS3Service
 ) {
     private val logger = LoggerFactory.getLogger(TenantService::class.java)
 
     fun create(tenant: Tenant): ResponseEntity<Any> {
         return try {
-            validateTenantDocument(tenant.person.cpf)
 
+            validateTenantDocument(tenant.person.cpf)
             val cpfEncrypt = EncryptionUtil.encrypt(tenant.person.cpf)
             tenant.person.cpf = cpfEncrypt
 
@@ -49,16 +50,17 @@ class TenantService @Autowired constructor(
                     name = tenantSaved.person.name,
                     cpf = tenantSaved.person.cpf,
                     status = tenantSaved.person.status,
-                    createdAt = tenantSaved.createdAt
+                    createdAt = tenantSaved.createdAt,
+                    images = tenantSaved.files
                 )
             )
         } catch (ex: ItemAlreadyExistsException) {
-            logger.warn("Tenant already exists: ${tenant.person.cpf}")
+            logger.warn("Tenant already exists: ${ex.message}")
             ResponseEntity.status(HttpStatus.CONFLICT).body(
                 mapOf("error" to "Conflict", "message" to ex.message)
             )
         } catch (ex: DocumentValidationException) {
-            logger.warn("Invalid CPF: ${tenant.person.cpf}")
+            logger.warn("Invalid CPF: ${ex.message}")
             ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 mapOf("error" to "Invalid document", "message" to ex.message)
             )

@@ -33,5 +33,6 @@ class SwaggerConfig {
             .addSecurityItem(
                 SecurityRequirement().addList("bearerAuth")
             )
+
     }
 }
