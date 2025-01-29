@@ -1,6 +1,7 @@
 package com.payloc.imob.service
 
 import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
+import com.payloc.imob.constants.Constants.Companion.ITEM_NOT_FOUND
 import com.payloc.imob.controller.vo.TenantVO
 import com.payloc.imob.exception.DocumentValidationException
 import com.payloc.imob.exception.ItemAlreadyExistsException
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
 
 @Service
@@ -24,51 +26,20 @@ class TenantService @Autowired constructor(
 ) {
     private val logger = LoggerFactory.getLogger(TenantService::class.java)
 
-    fun create(tenant: Tenant): ResponseEntity<Any> {
+    fun create(tenant: Tenant, files: List<MultipartFile>): ResponseEntity<Any> {
         return try {
-
-            validateTenantDocument(tenant.person.cpf)
-            val cpfEncrypt = EncryptionUtil.encrypt(tenant.person.cpf)
-            tenant.person.cpf = cpfEncrypt
-
-            repository.findByPersonCpf(cpfEncrypt).ifPresent {
-                throw ItemAlreadyExistsException("Tenant already exists.")
-            }
-
-            tenant.apply {
-                person.status = PersonStatus.ACTIVE
-                createdAt = LocalDateTime.now()
-                tenantNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
-            }
-
-            val tenantSaved = repository.save(tenant)
-            logger.info("Tenant created successfully: $tenantSaved")
-
-            ResponseEntity.ok(
-                TenantVO(
-                    tenantNumber = tenantSaved.tenantNumber,
-                    name = tenantSaved.person.name,
-                    cpf = tenantSaved.person.cpf,
-                    status = tenantSaved.person.status,
-                    createdAt = tenantSaved.createdAt,
-                    images = tenantSaved.files
-                )
-            )
+            validateAndEncryptTenantCpf(tenant)
+            checkIfTenantExists(tenant.person.cpf)
+            val uploadedFiles = uploadFiles(files)
+            populateTenantDetails(tenant, uploadedFiles)
+            val tenantSaved = saveTenant(tenant)
+            buildSuccessResponse(tenantSaved)
         } catch (ex: ItemAlreadyExistsException) {
-            logger.warn("Tenant already exists: ${ex.message}")
-            ResponseEntity.status(HttpStatus.CONFLICT).body(
-                mapOf("error" to "Conflict", "message" to ex.message)
-            )
+            buildErrorResponse(HttpStatus.CONFLICT, "Conflict", ex.message)
         } catch (ex: DocumentValidationException) {
-            logger.warn("Invalid CPF: ${ex.message}")
-            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                mapOf("error" to "Invalid document", "message" to ex.message)
-            )
+            buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid document", ex.message)
         } catch (e: Exception) {
-            logger.error("Error while creating tenant: ${e.message}", e)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                mapOf("error" to "Internal server error", "details" to e.message)
-            )
+            buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase, e.message)
         }
     }
 
@@ -87,9 +58,7 @@ class TenantService @Autowired constructor(
             ResponseEntity.ok(tenants)
         } catch (e: Exception) {
             logger.error("Error while fetching tenants: ${e.message}", e)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                mapOf("error" to "Internal server error", "details" to e.message)
-            )
+            buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase, e.message)
         }
     }
 
@@ -97,22 +66,18 @@ class TenantService @Autowired constructor(
         return try {
             val encryptedCpf = EncryptionUtil.encrypt(cpf)
             val tenant = repository.findByPersonCpf(encryptedCpf)
-                .orElseThrow { ItemNotFoundException("Tenant not found with CPF: $cpf") }
+                .orElseThrow { ItemNotFoundException(ITEM_NOT_FOUND) }
 
-            logger.info("Tenant retrieved successfully: $tenant")
+            logger.info("Tenant retrieved successfully")
 
             tenant.person.cpf = EncryptionUtil.decrypt(tenant.person.cpf)
             ResponseEntity.ok(tenant)
         } catch (ex: ItemNotFoundException) {
-            logger.warn("Tenant not found: $cpf")
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                mapOf("error" to "Not found", "message" to ex.message)
-            )
+            logger.warn(ITEM_NOT_FOUND)
+            buildErrorResponse(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND, ex.message)
         } catch (e: Exception) {
             logger.error("Error while fetching tenant: ${e.message}", e)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                mapOf("error" to "Internal server error", "details" to e.message)
-            )
+            buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e.message)
         }
     }
 
@@ -120,7 +85,7 @@ class TenantService @Autowired constructor(
         return try {
             val encryptedCpf = EncryptionUtil.encrypt(tenant.person.cpf)
             val existingTenant = repository.findByPersonCpf(encryptedCpf)
-                .orElseThrow { ItemNotFoundException("Tenant not found with CPF: ${tenant.person.cpf}") }
+                .orElseThrow { ItemNotFoundException(ITEM_NOT_FOUND) }
 
             existingTenant.apply {
                 person.cpf = encryptedCpf
@@ -128,37 +93,72 @@ class TenantService @Autowired constructor(
                 repository.save(existingTenant)
             }
             logger.info("Tenant updated successfully")
-            ResponseEntity.ok(
-                TenantVO(
-                    tenantNumber = existingTenant.tenantNumber,
-                    name = existingTenant.person.name,
-                    cpf = tenant.person.cpf,
-                    status = existingTenant.person.status,
-                    createdAt = existingTenant.createdAt,
-                    updatedAt = existingTenant.updatedAt
-                )
-            )
+            buildSuccessResponse(existingTenant)
         } catch (ex: ItemNotFoundException) {
-            logger.warn("Tenant not found: ${tenant.person.cpf}")
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                mapOf("error" to "Not found", "message" to ex.message)
-            )
+            logger.warn("Tenant not found:")
+            buildErrorResponse(HttpStatus.NOT_FOUND, "Not found", ex.message)
         } catch (ex: DocumentValidationException) {
-            logger.warn("Invalid CPF: ${tenant.person.cpf}")
-            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                mapOf("error" to "Invalid document", "message" to ex.message)
-            )
+            logger.warn("Invalid CPF")
+            buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid document", ex.message)
         } catch (e: Exception) {
             logger.error("Error while updating tenant: ${e.message}", e)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                mapOf("error" to "Internal server error", "details" to e.message)
-            )
+            buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e.message)
         }
     }
 
     private fun validateTenantDocument(cpf: String) {
         if (!ValidatorDocumentUtil(cpf).isValid()) {
-            throw DocumentValidationException("Document CPF is invalid: $cpf")
+            throw DocumentValidationException("Document CPF is invalid")
         }
+    }
+
+    private fun validateAndEncryptTenantCpf(tenant: Tenant) {
+        validateTenantDocument(tenant.person.cpf)
+        tenant.person.cpf = EncryptionUtil.encrypt(tenant.person.cpf)
+    }
+
+    private fun checkIfTenantExists(cpf: String) {
+        repository.findByPersonCpf(cpf).ifPresent {
+            throw ItemAlreadyExistsException("Tenant already exists")
+        }
+    }
+
+    private fun uploadFiles(files: List<MultipartFile>): List<String> {
+        return files.map { file -> awsS3Service.uploadImage(file) }
+    }
+
+    private fun populateTenantDetails(tenant: Tenant, uploadedFiles: List<String>) {
+        tenant.apply {
+            person.status = PersonStatus.ACTIVE
+            createdAt = LocalDateTime.now()
+            tenantNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
+            this.files = uploadedFiles
+        }
+    }
+
+    private fun saveTenant(tenant: Tenant): Tenant {
+        return repository.save(tenant).also {
+            logger.info("Tenant created successfully")
+        }
+    }
+
+    private fun buildSuccessResponse(tenant: Tenant): ResponseEntity<Any> {
+        return ResponseEntity.ok(
+            TenantVO(
+                tenantNumber = tenant.tenantNumber,
+                name = tenant.person.name,
+                cpf = tenant.person.cpf,
+                status = tenant.person.status,
+                createdAt = tenant.createdAt,
+                updatedAt = tenant.updatedAt
+            )
+        )
+    }
+
+    private fun buildErrorResponse(status: HttpStatus, error: String, message: String?): ResponseEntity<Any> {
+        logger.warn("$error: $message")
+        return ResponseEntity.status(status).body(
+            mapOf("error" to error, "message" to message)
+        )
     }
 }
