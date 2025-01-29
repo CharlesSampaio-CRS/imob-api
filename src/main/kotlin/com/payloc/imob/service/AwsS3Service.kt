@@ -1,13 +1,12 @@
 package com.payloc.imob.service
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.CannedAccessControlList
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.PutObjectRequest
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.util.UUID
+import java.util.*
 
 @Service
 class AwsS3Service(
@@ -25,7 +24,7 @@ class AwsS3Service(
         }
 
         val putObjectRequest = PutObjectRequest(bucketName, fileName, file.inputStream, metadata)
-            .withCannedAcl(CannedAccessControlList.PublicRead)
+
 
         amazonS3.putObject(putObjectRequest)
         return amazonS3.getUrl(bucketName, fileName).toString()
