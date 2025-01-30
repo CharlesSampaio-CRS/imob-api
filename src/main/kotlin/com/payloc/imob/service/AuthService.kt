@@ -3,6 +3,7 @@ package com.payloc.imob.service
 import com.payloc.imob.model.dto.LoginRequest
 import com.payloc.imob.model.dto.RegisterRequest
 import com.payloc.imob.model.entity.User
+import com.payloc.imob.model.enumerate.PersonStatus
 import com.payloc.imob.repository.UserRepository
 import com.payloc.imob.util.JwtUtil
 import com.payloc.imob.util.UsernameUtil
@@ -30,7 +31,7 @@ class AuthService(
             email = request.email,
             password = hashedPassword,
             role = request.role,
-            status = "ACTIVE"
+            status = PersonStatus.ACTIVE.name
         )
         userRepository.save(newUser)
         return false
