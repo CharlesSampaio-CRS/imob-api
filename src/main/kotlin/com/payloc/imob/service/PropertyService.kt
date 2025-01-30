@@ -14,135 +14,70 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
 
 @Service
 class PropertyService @Autowired constructor(
-    private val repository: PropertyRepository
+    private val repository: PropertyRepository,
+    private val awsS3Service: AwsS3Service
 ) {
     private val logger = LoggerFactory.getLogger(PropertyService::class.java)
 
-    fun create(property: Property): ResponseEntity<Any> {
-        return try {
+    fun create(property: Property, files: List<MultipartFile>): ResponseEntity<Any> =
+        try {
             validatePropertyAddress(property)
-
-            property.apply {
-                status = PropertyStatus.AVAILABLE
-                propertyNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
-                createdAt = LocalDateTime.now()
-            }
-            val save = repository.save(property)
-            val response = PropertyVO(
-                propertyNumber = save.propertyNumber,
-                typeProperty = save.typeProperty,
-                owner = save.owner.name,
-                status = save.status,
-                value = save.value,
-                createdAt = save.createdAt.toString()
-            )
-            logger.info("Property created successfully: $response")
-            ResponseEntity.ok(response)
+            val uploadedFiles = uploadFiles(files)
+            val savedProperty = saveProperty(property, uploadedFiles)
+            logger.info("Property created successfully: $savedProperty")
+            ResponseEntity.ok(savedProperty)
         } catch (ex: ItemAlreadyExistsException) {
-            logger.warn("$ITEM_ALREADY_EXISTS ${property.address}")
-            ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ErrorResponse(message = ex.message ?: "Address already exists", status = HttpStatus.CONFLICT.value())
-            )
+            handleItemAlreadyExistsException(property, ex)
         } catch (e: Exception) {
-            logger.error("Error while creating property: ${e.message}", e)
-            val errorMessage = mapOf("error" to "Error while creating property", "details" to e.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage)
+            handleGenericException("creating property", e)
         }
-    }
 
-    fun findAll(): ResponseEntity<Any> {
-        return try {
-            val properties = repository.findAll().map { property ->
-                PropertyVO(
-                    propertyNumber = property.propertyNumber,
-                    typeProperty = property.typeProperty,
-                    owner = property.owner.name,
-                    status = property.status,
-                    value = property.value,
-                    createdAt = property.createdAt.toString()
-                )
-            }
+    fun findAll(): ResponseEntity<Any> =
+        try {
+            val properties = repository.findAll().map(::toPropertyVO)
             logger.info("Retrieved ${properties.size} properties")
             ResponseEntity.ok(properties)
         } catch (e: Exception) {
-            logger.error("Error while fetching properties: ${e.message}", e)
-            val errorMessage = mapOf("error" to "Error while fetching properties", "details" to e.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage)
+            handleGenericException("fetching properties", e)
         }
-    }
 
-    fun findByPropertyNumber(propertyNumber: String): ResponseEntity<Any> {
-        return try {
+    fun findByPropertyNumber(propertyNumber: String): ResponseEntity<Any> =
+        try {
             val property = repository.findByPropertyNumber(propertyNumber).firstOrNull()
                 ?: throw ItemNotFoundException("Property with number $propertyNumber not found")
             logger.info("Property retrieved successfully: $property")
             ResponseEntity.ok(property)
         } catch (ex: ItemNotFoundException) {
-            logger.warn(ex.message)
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ErrorResponse(message = ex.message ?: "Property not found", status = HttpStatus.NOT_FOUND.value())
-            )
+            handleItemNotFoundException(ex)
         } catch (e: Exception) {
-            logger.error("Error while fetching property: ${e.message}", e)
-            val errorMessage = mapOf("error" to "Error while fetching property", "details" to e.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage)
+            handleGenericException("fetching property", e)
         }
-    }
 
-    fun updateProperty(property: Property): ResponseEntity<Any> {
-        return try {
-            val existingProperty = repository.findByPropertyNumber(property.propertyNumber).firstOrNull()
-                ?: throw ItemNotFoundException("Property with number ${property.propertyNumber} not found")
-
-            existingProperty.apply {
-                propertyNumber = property.propertyNumber
-                typeProperty = property.typeProperty
-                status = property.status
-                owner = property.owner
-                value = property.value
-                address = property.address
-                createdAt = property.createdAt
-                updatedAt = LocalDateTime.now()
-            }
-            val updatedProperty = repository.save(existingProperty)
+    fun updateProperty(property: Property): ResponseEntity<Any> =
+        try {
+            val existingProperty = property.propertyNumber?.let { findExistingProperty(it) }
+            val updatedProperty = existingProperty?.let { updateExistingProperty(it, property) }
             logger.info("Property updated successfully: $updatedProperty")
             ResponseEntity.ok(updatedProperty)
         } catch (ex: ItemNotFoundException) {
-            logger.warn(ex.message)
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ErrorResponse(message = ex.message ?: "Property not found", status = HttpStatus.NOT_FOUND.value())
-            )
+            handleItemNotFoundException(ex)
         } catch (e: Exception) {
-            logger.error("Error while updating property: ${e.message}", e)
-            val errorMessage = mapOf("error" to "Error while updating property", "details" to e.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage)
+            handleGenericException("updating property", e)
         }
-    }
 
-    fun findByStatus(status: String): ResponseEntity<Any> {
-        return try {
-            val properties = repository.findByStatus(status).map { property ->
-                PropertyVO(
-                    propertyNumber = property.propertyNumber,
-                    typeProperty = property.typeProperty,
-                    owner = property.owner.name,
-                    status = property.status,
-                    value = property.value,
-                    createdAt = property.createdAt.toString()
-                )
-            }
+    fun findByStatus(status: String): ResponseEntity<Any> =
+        try {
+            val properties = repository.findByStatus(status).map(::toPropertyVO)
             logger.info("Found ${properties.size} properties with status: $status")
             ResponseEntity.ok(properties)
         } catch (e: Exception) {
-            logger.error("Error while fetching properties by status: ${e.message}", e)
-            val errorMessage = mapOf("error" to "Error while fetching properties by status", "details" to e.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage)
+            handleGenericException("fetching properties by status", e)
         }
-    }
 
     private fun validatePropertyAddress(property: Property) {
         val existingProperty = repository.findByAddress(
@@ -154,5 +89,66 @@ class PropertyService @Autowired constructor(
             logger.warn("Property with the same address already exists: ${property.address}")
             throw ItemAlreadyExistsException("Property with address already exists")
         }
+    }
+
+    private fun uploadFiles(files: List<MultipartFile>): List<String> =
+        files.map(awsS3Service::uploadImage)
+
+    private fun saveProperty(property: Property, uploadedFiles: List<String>): PropertyVO {
+        property.apply {
+            status = PropertyStatus.AVAILABLE
+            propertyNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
+            createdAt = LocalDateTime.now()
+            this.files = uploadedFiles
+        }
+        val savedProperty = repository.save(property)
+        return toPropertyVO(savedProperty)
+    }
+
+    private fun toPropertyVO(property: Property): PropertyVO =
+        PropertyVO(
+            propertyNumber = property.propertyNumber,
+            typeProperty = property.typeProperty,
+            owner = property.owner.name,
+            status = property.status,
+            value = property.value,
+            createdAt = property.createdAt.toString()
+        )
+
+    private fun findExistingProperty(propertyNumber: String): Property =
+        repository.findByPropertyNumber(propertyNumber).firstOrNull()
+            ?: throw ItemNotFoundException("Property with number $propertyNumber not found")
+
+    private fun updateExistingProperty(existingProperty: Property, property: Property): Property {
+        return existingProperty.apply {
+            propertyNumber = property.propertyNumber
+            typeProperty = property.typeProperty
+            status = property.status
+            owner = property.owner
+            value = property.value
+            address = property.address
+            createdAt = property.createdAt
+            updatedAt = LocalDateTime.now()
+        }.let { repository.save(it) }
+    }
+
+    private fun handleItemAlreadyExistsException(property: Property, ex: ItemAlreadyExistsException): ResponseEntity<Any> {
+        logger.warn("$ITEM_ALREADY_EXISTS ${property.address}")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(message = ex.message ?: "Address already exists", status = HttpStatus.CONFLICT.value())
+        )
+    }
+
+    private fun handleItemNotFoundException(ex: ItemNotFoundException): ResponseEntity<Any> {
+        logger.warn(ex.message)
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+            ErrorResponse(message = ex.message ?: "Property not found", status = HttpStatus.NOT_FOUND.value())
+        )
+    }
+
+    private fun handleGenericException(action: String, e: Exception): ResponseEntity<Any> {
+        logger.error("Error while $action: ${e.message}", e)
+        val errorMessage = mapOf("error" to "Error while $action", "details" to e.message)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage)
     }
 }

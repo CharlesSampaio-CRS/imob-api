@@ -1,18 +1,29 @@
 package com.payloc.imob.controller
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.payloc.imob.model.entity.Property
 import com.payloc.imob.service.PropertyService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestPart
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/property")
 class PropertyController(
-    private val service: PropertyService
+    private val service: PropertyService,
+    private val objectMapper: ObjectMapper
 ) {
 
     @Operation(summary = "Create a new property", description = "Creates a new property record")
@@ -22,9 +33,16 @@ class PropertyController(
             ApiResponse(responseCode = "400", description = "Invalid input", content = [Content()])
         ]
     )
-    @PostMapping
-    fun create(@RequestBody property: Property): ResponseEntity<Any> {
-        return service.create(property)
+    @PostMapping(
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun create(@RequestPart("property") propertyJson: String,
+               @RequestPart("files", required = false) files: List<MultipartFile>?
+    ): ResponseEntity<Any> {
+        val property = objectMapper.readValue(propertyJson, Property::class.java)
+        return service.create(property, files ?: emptyList())
+
     }
 
     @Operation(summary = "Get all properties", description = "Retrieves a list of all properties")
