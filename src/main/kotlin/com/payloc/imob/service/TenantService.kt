@@ -39,7 +39,11 @@ class TenantService @Autowired constructor(
         } catch (ex: DocumentValidationException) {
             buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid document", ex.message)
         } catch (e: Exception) {
-            buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase, e.message)
+            buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
+                e.message
+            )
         }
     }
 
@@ -58,7 +62,11 @@ class TenantService @Autowired constructor(
             ResponseEntity.ok(tenants)
         } catch (e: Exception) {
             logger.error("Error while fetching tenants: ${e.message}", e)
-            buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase, e.message)
+            buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
+                e.message
+            )
         }
     }
 
@@ -67,10 +75,8 @@ class TenantService @Autowired constructor(
             val encryptedCpf = EncryptionUtil.encrypt(cpf)
             val tenant = repository.findByPersonCpf(encryptedCpf)
                 .orElseThrow { ItemNotFoundException(ITEM_NOT_FOUND) }
-
-            logger.info("Tenant retrieved successfully")
-
             tenant.person.cpf = EncryptionUtil.decrypt(tenant.person.cpf)
+            logger.info("Tenant retrieved successfully")
             ResponseEntity.ok(tenant)
         } catch (ex: ItemNotFoundException) {
             logger.warn(ITEM_NOT_FOUND)
