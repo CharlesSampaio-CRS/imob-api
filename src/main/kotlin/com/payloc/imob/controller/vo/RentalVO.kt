@@ -1,9 +1,11 @@
 package com.payloc.imob.controller.vo
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.payloc.imob.model.enumerate.RentalStatus
 import com.payloc.imob.model.enumerate.TypeWarranty
 import java.time.LocalDateTime
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class RentalVO(
     val rentalNumber: String?,
     val tenantNumber: String?,
