@@ -1,7 +1,7 @@
 package com.payloc.imob.service
 
 import com.payloc.imob.model.dto.LoginRequestDTO
-import com.payloc.imob.model.dto.RegisterRequestDTO
+import com.payloc.imob.model.dto.UserRequestDTO
 import com.payloc.imob.model.entity.User
 import com.payloc.imob.model.enumerate.PersonStatus
 import com.payloc.imob.repository.UserRepository
@@ -10,6 +10,7 @@ import com.payloc.imob.util.UsernameUtil
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 class AuthService(
@@ -18,7 +19,7 @@ class AuthService(
     private val jwtUtil: JwtUtil
     ) {
 
-    fun register(request: RegisterRequestDTO): Boolean {
+    fun register(request: UserRequestDTO): Boolean {
         if (userRepository.findByEmail(request.email) != null) {
             return true
         }
@@ -31,7 +32,9 @@ class AuthService(
             email = request.email,
             password = hashedPassword,
             role = request.role,
-            status = PersonStatus.ACTIVE.name
+            status = PersonStatus.ACTIVE.name,
+            createdAt = Date(),
+            updatedAt = null
         )
         userRepository.save(newUser)
         return false
@@ -49,5 +52,26 @@ class AuthService(
         } else {
             ResponseEntity.badRequest().body("Invalid username or password!")
         }
+    }
+
+    fun update(request: UserRequestDTO): ResponseEntity<Any> {
+        val existingUser = userRepository.findById(request.id).orElse(null)
+            ?: return ResponseEntity.badRequest().body("User not found!")
+
+        request.password.let {
+            existingUser.password = passwordEncoder.encode(it)
+        }
+        request.role.let {
+            existingUser.role = it
+        }
+        request.status.let {
+            if (it != null) {
+                existingUser.status = it
+            }
+        }
+        existingUser.updatedAt = Date()
+
+        userRepository.save(existingUser)
+        return ResponseEntity.ok("User updated successfully!")
     }
 }

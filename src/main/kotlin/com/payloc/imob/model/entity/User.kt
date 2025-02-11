@@ -12,8 +12,9 @@ data class User(
     val username: String,
     val name: String,
     @field:Email val email: String,
-    @field:NotBlank val password: String,
-    @field:NotBlank val role: String,
-    val status: String = "ACTIVE",
-    val createdAt: Date = Date(),
+    @field:NotBlank var password: String,
+    @field:NotBlank var role: String,
+    var status: String = "ACTIVE",
+    val createdAt: Date,
+    var updatedAt: Date?
 )
