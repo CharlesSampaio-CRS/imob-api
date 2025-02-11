@@ -11,5 +11,6 @@ data class PropertyDTO(
     val status: PropertyStatus?,
     val owner: String,
     val value: Double,
-    val createdAt: String
+    val createdAt: String,
+    val files: List<String>?
 )

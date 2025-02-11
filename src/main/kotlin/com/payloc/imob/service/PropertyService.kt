@@ -38,7 +38,7 @@ class PropertyService @Autowired constructor(
 
     fun findAll(): ResponseEntity<Any> =
         try {
-            val properties = repository.findAll().map(::toPropertyVO)
+            val properties = repository.findAll().map(::toPropertyDTO)
             logger.info("Retrieved ${properties.size} properties")
             ResponseEntity.ok(properties)
         } catch (e: Exception) {
@@ -71,7 +71,7 @@ class PropertyService @Autowired constructor(
 
     fun findByStatus(status: String): ResponseEntity<Any> =
         try {
-            val properties = repository.findByStatus(status).map(::toPropertyVO)
+            val properties = repository.findByStatus(status).map(::toPropertyDTO)
             logger.info("Found ${properties.size} properties with status: $status")
             ResponseEntity.ok(properties)
         } catch (e: Exception) {
@@ -101,17 +101,18 @@ class PropertyService @Autowired constructor(
             this.files = uploadedFiles
         }
         val savedProperty = repository.save(property)
-        return toPropertyVO(savedProperty)
+        return toPropertyDTO(savedProperty)
     }
 
-    private fun toPropertyVO(property: Property): com.payloc.imob.model.dto.PropertyDTO =
+    private fun toPropertyDTO(property: Property): com.payloc.imob.model.dto.PropertyDTO =
         com.payloc.imob.model.dto.PropertyDTO(
             propertyNumber = property.propertyNumber,
             typeProperty = property.typeProperty,
             owner = property.owner.name,
             status = property.status,
             value = property.value,
-            createdAt = property.createdAt.toString()
+            createdAt = property.createdAt.toString(),
+            files = property.files
         )
 
     private fun findExistingProperty(propertyNumber: String): Property =

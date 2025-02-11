@@ -12,6 +12,6 @@ data class TenantDTO(
     val status: PersonStatus?,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
-    val images: List<String>? = null
+    val files: List<String>? = null
 
 )

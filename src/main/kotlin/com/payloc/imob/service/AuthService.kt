@@ -38,9 +38,11 @@ class AuthService(
     }
 
     fun login(request: LoginRequestDTO): ResponseEntity<Any> {
-        val existingUser = userRepository.findByEmail(request.email)
-            ?: return ResponseEntity.badRequest().body("Invalid username or password!")
-
+        val existingUser = when {
+            !request.email.isNullOrBlank() -> userRepository.findByEmail(request.email)
+            !request.username.isNullOrBlank() -> userRepository.findByUsername(request.username)
+            else -> null
+        } ?: return ResponseEntity.badRequest().body("Invalid username or password!")
         return if (passwordEncoder.matches(request.password, existingUser.password)) {
             val token = jwtUtil.generateToken(existingUser.username)
             ResponseEntity.ok(mapOf("token" to token))

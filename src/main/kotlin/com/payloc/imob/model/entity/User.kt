@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
+import java.util.Date
 
 @Document(collection = "users")
 data class User(
@@ -13,5 +14,6 @@ data class User(
     @field:Email val email: String,
     @field:NotBlank val password: String,
     @field:NotBlank val role: String,
-    val status: String = "ACTIVE"
+    val status: String = "ACTIVE",
+    val createdAt: Date = Date(),
 )

@@ -55,7 +55,8 @@ class TenantService @Autowired constructor(
                     name = it.person.name,
                     cpf = EncryptionUtil.decrypt(it.person.cpf),
                     status = it.person.status,
-                    createdAt = it.createdAt
+                    createdAt = it.createdAt,
+                    files = it.files
                 )
             }
             logger.info("Retrieved ${tenants.size} tenants")
