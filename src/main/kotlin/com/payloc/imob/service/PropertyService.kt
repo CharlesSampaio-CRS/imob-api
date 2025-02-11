@@ -2,7 +2,6 @@ package com.payloc.imob.service
 
 import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
 import com.payloc.imob.constants.Constants.Companion.ITEM_ALREADY_EXISTS
-import com.payloc.imob.controller.vo.PropertyVO
 import com.payloc.imob.exception.ErrorResponse
 import com.payloc.imob.exception.ItemAlreadyExistsException
 import com.payloc.imob.exception.ItemNotFoundException
@@ -94,7 +93,7 @@ class PropertyService @Autowired constructor(
     private fun uploadFiles(files: List<MultipartFile>): List<String> =
         files.map(awsS3Service::uploadImage)
 
-    private fun saveProperty(property: Property, uploadedFiles: List<String>): PropertyVO {
+    private fun saveProperty(property: Property, uploadedFiles: List<String>): com.payloc.imob.model.dto.PropertyDTO {
         property.apply {
             status = PropertyStatus.AVAILABLE
             propertyNumber = repository.count().plus(INITIAL_ELEMENT_NUMBER).toString()
@@ -105,8 +104,8 @@ class PropertyService @Autowired constructor(
         return toPropertyVO(savedProperty)
     }
 
-    private fun toPropertyVO(property: Property): PropertyVO =
-        PropertyVO(
+    private fun toPropertyVO(property: Property): com.payloc.imob.model.dto.PropertyDTO =
+        com.payloc.imob.model.dto.PropertyDTO(
             propertyNumber = property.propertyNumber,
             typeProperty = property.typeProperty,
             owner = property.owner.name,

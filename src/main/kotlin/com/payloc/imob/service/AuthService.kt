@@ -1,7 +1,7 @@
 package com.payloc.imob.service
 
-import com.payloc.imob.model.dto.LoginRequest
-import com.payloc.imob.model.dto.RegisterRequest
+import com.payloc.imob.model.dto.LoginRequestDTO
+import com.payloc.imob.model.dto.RegisterRequestDTO
 import com.payloc.imob.model.entity.User
 import com.payloc.imob.model.enumerate.PersonStatus
 import com.payloc.imob.repository.UserRepository
@@ -18,7 +18,7 @@ class AuthService(
     private val jwtUtil: JwtUtil
     ) {
 
-    fun register(request: RegisterRequest): Boolean {
+    fun register(request: RegisterRequestDTO): Boolean {
         if (userRepository.findByEmail(request.email) != null) {
             return true
         }
@@ -37,7 +37,7 @@ class AuthService(
         return false
     }
 
-    fun login(request: LoginRequest): ResponseEntity<Any> {
+    fun login(request: LoginRequestDTO): ResponseEntity<Any> {
         val existingUser = userRepository.findByEmail(request.email)
             ?: return ResponseEntity.badRequest().body("Invalid username or password!")
 

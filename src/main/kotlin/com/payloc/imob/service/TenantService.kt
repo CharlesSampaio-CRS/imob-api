@@ -2,7 +2,7 @@ package com.payloc.imob.service
 
 import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
 import com.payloc.imob.constants.Constants.Companion.ITEM_NOT_FOUND
-import com.payloc.imob.controller.vo.TenantVO
+import com.payloc.imob.model.dto.TenantDTO
 import com.payloc.imob.exception.DocumentValidationException
 import com.payloc.imob.exception.ItemAlreadyExistsException
 import com.payloc.imob.exception.ItemNotFoundException
@@ -50,7 +50,7 @@ class TenantService @Autowired constructor(
     fun findAll(): ResponseEntity<Any> {
         return try {
             val tenants = repository.findAll().map {
-                TenantVO(
+                TenantDTO(
                     tenantNumber = it.tenantNumber,
                     name = it.person.name,
                     cpf = EncryptionUtil.decrypt(it.person.cpf),
@@ -150,7 +150,7 @@ class TenantService @Autowired constructor(
 
     private fun buildSuccessResponse(tenant: Tenant): ResponseEntity<Any> {
         return ResponseEntity.ok(
-            TenantVO(
+            TenantDTO(
                 tenantNumber = tenant.tenantNumber,
                 name = tenant.person.name,
                 cpf = tenant.person.cpf,

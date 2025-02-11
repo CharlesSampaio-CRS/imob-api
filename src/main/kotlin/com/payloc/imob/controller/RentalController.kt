@@ -1,6 +1,6 @@
 package com.payloc.imob.controller
 
-import com.payloc.imob.controller.vo.RentalVO
+import com.payloc.imob.model.dto.RentalDTO
 import com.payloc.imob.model.entity.Rental
 import com.payloc.imob.service.RentalService
 import io.swagger.v3.oas.annotations.Operation
@@ -24,7 +24,7 @@ class RentalController(
         ]
     )
     @PostMapping
-    fun create(@RequestBody rental: RentalVO): ResponseEntity<Any> {
+    fun create(@RequestBody rental: RentalDTO): ResponseEntity<Any> {
         return service.create(rental)
     }
 

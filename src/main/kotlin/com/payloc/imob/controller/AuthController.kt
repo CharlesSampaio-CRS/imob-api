@@ -1,7 +1,7 @@
 package com.payloc.imob.controller
 
-import com.payloc.imob.model.dto.LoginRequest
-import com.payloc.imob.model.dto.RegisterRequest
+import com.payloc.imob.model.dto.LoginRequestDTO
+import com.payloc.imob.model.dto.RegisterRequestDTO
 import com.payloc.imob.service.AuthService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -28,7 +28,7 @@ class AuthController(
         ]
     )
     @PostMapping("/register")
-    fun register(@Validated @RequestBody request: RegisterRequest): ResponseEntity<String> =
+    fun register(@Validated @RequestBody request: RegisterRequestDTO): ResponseEntity<String> =
         if (authService.register(request)) {
             ResponseEntity.badRequest().body("User with this email already exists!")
         } else {
@@ -43,5 +43,5 @@ class AuthController(
         ]
     )
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): ResponseEntity<Any> = authService.login(request)
+    fun login(@RequestBody request: LoginRequestDTO): ResponseEntity<Any> = authService.login(request)
 }
