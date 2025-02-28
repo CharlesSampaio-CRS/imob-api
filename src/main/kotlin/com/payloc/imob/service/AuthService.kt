@@ -1,56 +1,35 @@
 package com.payloc.imob.service
 
 import com.payloc.imob.model.dto.LoginRequestDTO
-import com.payloc.imob.model.dto.UserRequestDTO
-import com.payloc.imob.model.entity.User
-import com.payloc.imob.model.enumerate.PersonStatus
-import com.payloc.imob.repository.UserRepository
-import com.payloc.imob.util.JwtUtil
-import com.payloc.imob.util.UsernameUtil
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import java.util.*
+import org.springframework.web.client.RestTemplate
 
 @Service
 class AuthService(
-    private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder,
-    private val jwtUtil: JwtUtil
-    ) {
-
-    fun register(request: UserRequestDTO): Boolean {
-        if (userRepository.findByEmail(request.email) != null) {
-            return true
+    private val restTemplate: RestTemplate,
+    @Value("\${security-manager.api.url}")
+    private val baseUrl: String
+) {
+    fun login(request: LoginRequestDTO): ResponseEntity<Any> {
+        val headers = HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_JSON
         }
 
-        val hashedPassword = passwordEncoder.encode(request.password)
-        val newUser = User(
-            id = null,
-            username = UsernameUtil.generateUsername(request.email),
-            name = request.name,
-            email = request.email,
-            password = hashedPassword,
-            role = request.role,
-            status = PersonStatus.ACTIVE.name,
-            createdAt = Date(),
-            updatedAt = null
-        )
-        userRepository.save(newUser)
-        return false
-    }
+        val httpEntity = HttpEntity(request, headers)
+        val loginUrl = "$baseUrl/auth/login"
 
-    fun login(request: LoginRequestDTO): ResponseEntity<Any> {
-        val existingUser = when {
-            !request.email.isNullOrBlank() -> userRepository.findByEmail(request.email)
-            !request.username.isNullOrBlank() -> userRepository.findByUsername(request.username)
-            else -> null
-        } ?: return ResponseEntity.badRequest().body("Invalid username or password!")
-        return if (passwordEncoder.matches(request.password, existingUser.password)) {
-            val token = jwtUtil.generateToken(existingUser)
-            ResponseEntity.ok(mapOf("token" to token))
-        } else {
-            ResponseEntity.badRequest().body("Invalid username or password!")
+        return try {
+            val response = restTemplate.exchange(loginUrl, HttpMethod.POST, httpEntity, Any::class.java)
+            ResponseEntity.status(response.statusCode).body(response.body)
+        } catch (ex: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao chamar API de login: ${ex.message}")
         }
     }
 }
