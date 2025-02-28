@@ -1,8 +1,7 @@
 package com.payloc.imob.service
 
-import com.payloc.imob.constants.Constants
 import com.payloc.imob.constants.Constants.Companion.INITIAL_ELEMENT_NUMBER
-import com.payloc.imob.controller.vo.RentalVO
+import com.payloc.imob.model.dto.RentalDTO
 import com.payloc.imob.exception.ItemAlreadyExistsException
 import com.payloc.imob.exception.ItemNotFoundException
 import com.payloc.imob.model.entity.Rental
@@ -26,7 +25,7 @@ class RentalService @Autowired constructor(
 ) {
     private val logger = LoggerFactory.getLogger(RentalService::class.java)
 
-    fun create(rentalVo: RentalVO): ResponseEntity<Any> {
+    fun create(rentalVo: RentalDTO): ResponseEntity<Any> {
         return try {
             val property = propertyRepository.findByPropertyNumber(rentalVo.propertyNumber).firstOrNull()
                 ?: throw IllegalStateException("Property not found.")
@@ -88,7 +87,7 @@ class RentalService @Autowired constructor(
     fun findAll(): ResponseEntity<Any> {
         return try {
             val rentals = rentalRepository.findAll().map { rental ->
-                RentalVO(
+                RentalDTO(
                     rentalNumber = rental.rentalNumber,
                     tenantNumber = rental.tenant.tenantNumber,
                     tenantName = rental.tenant.person.name,
@@ -160,7 +159,7 @@ class RentalService @Autowired constructor(
             logger.info("Rental updated successfully: $existingRental")
 
             ResponseEntity.ok(
-                RentalVO(
+                RentalDTO(
                     rentalNumber = existingRental.rentalNumber,
                     tenantNumber = existingRental.tenant.tenantNumber,
                     tenantName = rental.tenant.person.name,
@@ -194,7 +193,7 @@ class RentalService @Autowired constructor(
     fun findByStatus(status: String): ResponseEntity<Any> {
         return try {
             val rentals = rentalRepository.findByStatus(status).map { rental ->
-                RentalVO(
+                RentalDTO(
                     rentalNumber = rental.rentalNumber,
                     tenantNumber = rental.tenant.tenantNumber,
                     tenantName = rental.tenant.person.name,

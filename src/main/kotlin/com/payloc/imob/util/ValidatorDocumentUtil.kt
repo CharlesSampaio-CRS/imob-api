@@ -1,6 +1,6 @@
 package com.payloc.imob.util
 
-class ValidatorDocument(private val cpf: String) {
+class ValidatorDocumentUtil(private val cpf: String) {
 
     fun isValid(): Boolean {
         val cleanedCpf = cpf.replace(Regex("[^0-9]"), "")

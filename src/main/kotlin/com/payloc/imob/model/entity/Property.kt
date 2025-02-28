@@ -19,6 +19,7 @@ data class Property (
     var owner: Person,
     var value: Double,
     var address: Address,
+    var files: List<String>? = emptyList(),
     var createdAt: LocalDateTime? = null,
     var updatedAt: LocalDateTime? = null
 )

@@ -20,6 +20,7 @@ data class Tenant(
     var participation: Participation?,
     var references: List<Reference>? = emptyList(),
     var goods: List<Goods>? = emptyList(),
+    var files: List<String>? = emptyList(),
     var createdAt: LocalDateTime? = LocalDateTime.now(),
     var updatedAt: LocalDateTime? = null,
     var rentalNumber: List<String>? = listOf())

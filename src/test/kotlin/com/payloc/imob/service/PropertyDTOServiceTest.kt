@@ -1,6 +1,6 @@
 package com.payloc.imob.service
 
-import com.payloc.imob.controller.vo.PropertyVO
+import com.payloc.imob.model.dto.PropertyDTO
 import com.payloc.imob.model.entity.Person
 import com.payloc.imob.model.entity.Property
 import com.payloc.imob.model.enumerate.PropertyStatus
@@ -15,10 +15,14 @@ import org.springframework.http.HttpStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class PropertyServiceTest {
+class PropertyDTOServiceTest {
 
     private val repository: PropertyRepository = mock(PropertyRepository::class.java)
-    private val service = PropertyService(repository)
+    private val s3Service: AwsS3Service = mock(AwsS3Service::class.java)
+    private val service = PropertyService(
+        repository,
+        s3Service
+    )
 
     @Test
     fun `create should return ResponseEntity with PropertyVO when property is successfully created`() {
@@ -45,16 +49,20 @@ class PropertyServiceTest {
             address = mock(),
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now(),
+            files = emptyList(),
             id = null
         )
 
         `when`(repository.count()).thenReturn(0L)
         `when`(repository.save(any(Property::class.java))).thenReturn(property)
 
-        val response = service.create(property)
+        val response = service.create(
+            property,
+            files = emptyList()
+        )
 
         assertEquals(HttpStatus.OK, response.statusCode)
-        val body = response.body as PropertyVO
+        val body = response.body as PropertyDTO
         assertEquals("1000001", body.propertyNumber)
         assertEquals(TypeProperty.RESIDENTIAL, body.typeProperty)
         assertEquals("John Doe", body.owner)
@@ -95,7 +103,7 @@ class PropertyServiceTest {
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body as List<*>
         assertEquals(1, body.size)
-        val firstProperty = body[0] as PropertyVO
+        val firstProperty = body[0] as PropertyDTO
         assertEquals("1", firstProperty.propertyNumber)
         assertEquals(TypeProperty.RESIDENTIAL, firstProperty.typeProperty)
         assertEquals("John Doe", firstProperty.owner)
@@ -219,7 +227,7 @@ class PropertyServiceTest {
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body as List<*>
         assertEquals(1, body.size)
-        val firstProperty = body[0] as PropertyVO
+        val firstProperty = body[0] as PropertyDTO
         assertEquals("1", firstProperty.propertyNumber)
         assertEquals(TypeProperty.RESIDENTIAL, firstProperty.typeProperty)
         assertEquals("John Doe", firstProperty.owner)
