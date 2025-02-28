@@ -1,39 +1,34 @@
 package com.payloc.imob.util
 
-import com.payloc.imob.model.entity.User
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Component
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest
 import java.util.*
+import javax.crypto.SecretKey
 
 @Suppress("UNCHECKED_CAST")
 @Component
 class JwtUtil {
-    private val secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256)
-    private val expirationTime = 3600000
+    private val secretKey: SecretKey = loadSecretFromAWS()
 
-    fun generateToken(user: User): String {
-        return Jwts.builder()
-            .setSubject(user.username)
-            .claim("user", user.name)
-            .claim("email", user.email)
-            .claim("grants", getGrants(user.role))
-            .claim("authorities", getGrants(user.role))
-            .claim("credentials", user.password)
-            .setIssuedAt(Date())
-            .setExpiration(Date(System.currentTimeMillis() + expirationTime))
-            .signWith(secretKey)
-            .compact()
-    }
+    private fun loadSecretFromAWS(): SecretKey {
+        val secretName = "api-sec-manager"
+        val region = Region.US_EAST_1
 
-    private fun getGrants(role: String): List<String> {
-        return when (role) {
-            "ADMIN" -> listOf("ROLE_ADMIN", "ROLE_USER")
-            "USER" -> listOf("ROLE_USER")
-            else -> emptyList()
-        }
+        val client = SecretsManagerClient.builder()
+            .region(region)
+            .build()
+
+        val request = GetSecretValueRequest.builder()
+            .secretId(secretName)
+            .build()
+
+        val secretValue = client.getSecretValue(request).secretString()
+        return Keys.hmacShaKeyFor(secretValue.toByteArray())
     }
 
     fun getUsernameFromToken(token: String): String {
