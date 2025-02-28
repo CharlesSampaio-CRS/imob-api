@@ -19,12 +19,18 @@ class JwtAuthenticationFilter(
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
         val token = getTokenFromRequest(request)
         if (token != null && jwtUtil.validateToken(token)) {
-            val username = jwtUtil.getUsernameFromToken(token)
-            val authorities = jwtUtil.getAuthoritiesFromToken(token).map { SimpleGrantedAuthority(it) }
-            val authentication = UsernamePasswordAuthenticationToken(username, null, authorities).apply {
-                details = WebAuthenticationDetailsSource().buildDetails(request)
+            try {
+                val username = jwtUtil.getUsernameFromToken(token)
+                val authorities = jwtUtil.getAuthoritiesFromToken(token).map { SimpleGrantedAuthority(it) }
+                val authentication = UsernamePasswordAuthenticationToken(username, null, authorities).apply {
+                    details = WebAuthenticationDetailsSource().buildDetails(request)
+                }
+                SecurityContextHolder.getContext().authentication = authentication
+            } catch (e: Exception) {
+                response.status = HttpServletResponse.SC_UNAUTHORIZED // 401 Unauthorized
+                response.writer.write("Invalid or expired token.")
+                return
             }
-            SecurityContextHolder.getContext().authentication = authentication
         }
         filterChain.doFilter(request, response)
     }
